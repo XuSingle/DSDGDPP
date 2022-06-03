@@ -25,7 +25,7 @@ class Discriminator(nn.Module):
         self.fc1 = nn.Linear(2, 128)
         self.fc2 = nn.Linear(128, 128)
         self.fc3 = nn.Linear(128, 1)
-        self.activate = nn.ReLU()
+        self.activate = nn.Tanh()
 
     def forward(self, x):
         x1 = x.type(torch.float32)
