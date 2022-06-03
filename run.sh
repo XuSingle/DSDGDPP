@@ -1,5 +1,5 @@
-python main.py --model 1 --G_gap 5000 --sparse_G 0.3 --sparse_D 0 --model_type G_Only
-#python main.py --model 1 --G_gap 5000 --D_gap 5000 --sparse_G 0 --sparse_D 0 --model_type OG
+# python main.py --model 1 --G_gap 5000 --sparse_G 0.3 --sparse_D 0 --model_type G_Only
+python main.py --model 0 --G_gap 5000 --D_gap 5000 --sparse_G 0 --sparse_D 0 --model_type OG
 #python main.py --model 1 --G_gap 5000 --D_gap 5000 --sparse_G 0 --sparse_D 0 --model_type OG
 #python main.py --model 1 --G_gap 5000 --D_gap 5000 --sparse_G 0 --sparse_D 0 --model_type OG
 #python main.py --model 1 --G_gap 5000 --D_gap 5000 --sparse_G 0 --sparse_D 0 --model_type OG
