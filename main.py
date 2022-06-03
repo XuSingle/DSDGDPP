@@ -6,7 +6,6 @@ from utils import evaluate_samples, sample_ring, sample_grid
 from tqdm import tqdm
 import os
 from torch import distributions as dis
-from GDPPLoss import compute_gdpp
 from dsd import DSDTraining
 
 def run_gan(model_num, params):
@@ -23,18 +22,16 @@ def run_gan(model_num, params):
     criterion = nn.BCELoss()
     flag_G = 0
     pretrain = 5000
-
     ############################
     # Start training
     ###########################
 
     for i in tqdm(range(args.iter)):
-
         if not args.model_type == 'OG':
             if i < pretrain:
                 dsd_netG.train_on_sparse = False
                 dsd_netD.train_on_sparse = False
-            elif i >= pretrain and flag_G < args.G_gap:
+            elif i >= pretrain and flag_G < args.gap:
                 dsd_netG.train_on_sparse = True
                 dsd_netG.update_masks()
                 dsd_netD.train_on_sparse = True
@@ -44,7 +41,7 @@ def run_gan(model_num, params):
                 for para in dis_optim.param_groups:
                     para['lr'] = params['disc_learning_rate']
                 flag_G = flag_G + 1
-            elif i >= pretrain and flag_G < 2 * args.G_gap:
+            elif i >= pretrain and flag_G < 2 * args.gap:
                 dsd_netG.train_on_sparse = False
                 dsd_netD.train_on_sparse = False
                 for para in gen_optim.param_groups:
@@ -52,14 +49,15 @@ def run_gan(model_num, params):
                 for para in dis_optim.param_groups:
                     para['lr'] = params['disc_learning_rate'] * 0.5
                 flag_G = flag_G + 1
-                if flag_G == 2 * args.G_gap:
+                if flag_G == 2 * args.gap:
                     flag_G = 0
 
-            if i % args.G_gap == 0 and dsd_netG.train_on_sparse:
+            if i % args.gap == 0 and dsd_netG.train_on_sparse:
                 print('Iter%d, G_Sparse' % i)
                 dsd_netG.update_masks()
-            elif i % args.G_gap == 0 and not dsd_netG.train_on_sparse:
+            elif i % args.gap == 0 and not dsd_netG.train_on_sparse:
                 print('Iter%d, G_Dense' % i)
+
 
         noise = dis.normal.Normal(torch.zeros(params['z_dim']), torch.ones(params['z_dim'])).sample(
             sample_shape=torch.tensor([params['batch_size']])).to(DEVICE)
@@ -89,14 +87,16 @@ def run_gan(model_num, params):
         # Update Generator network
         ###########################
 
-        generator.zero_grad()
+        dsd_netG.zero_grad()
         fake_score, fake_h = dsd_netD(samples)
         og_gen_loss = criterion(fake_score, torch.ones_like(fake_score))
-#         gdpp_loss = compute_gdpp(fake_h.to('cpu'), real_h.to('cpu')).item()
-#         #         print(gdpp_loss)
-#         gen_loss = torch.mean(gdpp_loss + og_gen_loss)
+        # gdpp_loss = compute_gdpp(fake_h.to('cpu'), real_h.to('cpu')).item()
+        # #         print(gdpp_loss)
+        # gen_loss = torch.mean(gdpp_loss + og_gen_loss)
+        # gen_loss.backward()
         og_gen_loss.backward()
         gen_optim.step()
+
 
         if i % 5000 == 0:
             noise = dis.normal.Normal(torch.zeros(params['z_dim']), torch.ones(params['z_dim'])).sample(
@@ -111,8 +111,7 @@ def run_gan(model_num, params):
     data = data.to('cpu').detach().numpy()
     modes, high_ratio = evaluate_samples(samples, data, model_num, i + 1, is_ring_distribution=(model_num % 2 == 0))
 
-    with open('./%d_%s_G_gap_%d_G_sparse_%.1f_D_sparse_%.1f.txt' %
-              (args.model, args.model_type, args.G_gap, args.sparse_G, args.sparse_D), 'a') as f:
+    with open('./%d_score_record_%s_%d_%.1f.txt' % (args.model, args.model_type, args.gap, args.sparse_G), 'a') as f:
         f.write("Modes:" + str(modes) + '\n')
         f.write("High_ratio:" + str(high_ratio) + '\n')
 
@@ -131,6 +130,7 @@ if __name__ == '__main__':
         epsilon=1e-8,
         viz_every=500,
         batch_size=512,
+        max_iter=25000,
         gen_learning_rate=1e-3,
         disc_learning_rate=1e-4,
         number_evaluation_samples=2500,
@@ -141,11 +141,10 @@ if __name__ == '__main__':
     argparser = argparse.ArgumentParser()
     argparser.add_argument('--model', type=int, default=0, required=True)
     argparser.add_argument('--iter', type=int, default=25000)
-    argparser.add_argument('--G_gap', type=int, default=5)
-    argparser.add_argument('--D_gap', type=int, default=5)
+    argparser.add_argument('--gap', type=int, default=5)
     argparser.add_argument('--sparse_G', type=float, default=0.3)
     argparser.add_argument('--sparse_D', type=float, default=0.3)
-    argparser.add_argument('--model_type', type=str, required=True)
+    argparser.add_argument('--model_type', type=str, default='OG')
     args = argparser.parse_args()
 
     run_gan(args.model, params)
