@@ -92,10 +92,10 @@ def run_gan(model_num, params):
         generator.zero_grad()
         fake_score, fake_h = dsd_netD(samples)
         og_gen_loss = criterion(fake_score, torch.ones_like(fake_score))
-        gdpp_loss = compute_gdpp(fake_h.to('cpu'), real_h.to('cpu')).item()
-        #         print(gdpp_loss)
-        gen_loss = torch.mean(gdpp_loss + og_gen_loss)
-        gen_loss.backward()
+#         gdpp_loss = compute_gdpp(fake_h.to('cpu'), real_h.to('cpu')).item()
+#         #         print(gdpp_loss)
+#         gen_loss = torch.mean(gdpp_loss + og_gen_loss)
+        og_gen_loss.backward()
         gen_optim.step()
 
         if i % 5000 == 0:
