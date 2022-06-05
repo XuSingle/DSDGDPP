@@ -32,18 +32,18 @@ def run_gan(model_num, params):
         if not args.model_type == 'OG':
             if i < pretrain:
                 dsd_netG.train_on_sparse = False
-            elif i >= pretrain and flag_G < args.G_gap:
+            elif i >= pretrain and flag_G < args.gap:
                 dsd_netG.train_on_sparse = True
                 dsd_netG.update_masks()
                 for para in gen_optim.param_groups:
                     para['lr'] = params['gen_learning_rate']
                 flag_G = flag_G + 1
-            elif i >= pretrain and flag_G < 2 * args.G_gap:
+            elif i >= pretrain and flag_G < 2 * args.gap:
                 dsd_netG.train_on_sparse = False
                 for para in gen_optim.param_groups:
                     para['lr'] = params['gen_learning_rate'] * 0.5
                 flag_G = flag_G + 1
-                if flag_G == 2 * args.G_gap:
+                if flag_G == 2 * args.gap:
                     flag_G = 0
 
             if i % args.gap == 0 and dsd_netG.train_on_sparse:
