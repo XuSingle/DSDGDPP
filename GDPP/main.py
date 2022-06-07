@@ -87,6 +87,15 @@ def run_gan(model_num, params):
         #         print(gdpp_loss)
         gen_loss = torch.mean(gdpp_loss + og_gen_loss)
         gen_loss.backward()
+        
+        if dsd_netG.train_on_sparse:
+            for (w, b), (mask_w, mask_b) in zip(dsd_netG.layers, dsd_netG.masks):
+                # Values
+                w.data[mask_w] = 0
+                b.data[mask_b] = 0
+                # Grad
+                w.grad.data[mask_w] = 0
+                b.grad.data[mask_b] = 0
         gen_optim.step()
 
         if i % 5000 == 0:
